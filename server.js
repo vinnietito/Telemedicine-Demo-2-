@@ -1,51 +1,25 @@
-const socket = io();  // Connect to Socket.io server
-const chatBox = document.getElementById('chat-box');
-const chatForm = document.getElementById('chat-form');
-const messageInput = document.getElementById('message');
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 
-// Load past messages when connecting
-socket.on('output-messages', (data) => {
-    data.forEach(message => displayMessage(message));
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);  // Initialize Socket.IO with HTTP server
+
+// Serve your static files (e.g., the client-side code)
+app.use(express.static('public'));
+
+// Handle connection events
+io.on('connection', (socket) => {
+  console.log('A user connected');
+
+  // You can listen for custom events and respond
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
 });
 
-// Event listener for form submission
-chatForm.addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    const message = messageInput.value;
-
-    // Get user role (doctor or patient)
-    const role = prompt('Enter your role: doctor or patient').toLowerCase();
-    const username = prompt('Enter your name');
-
-    // Send message to server
-    const chatData = { username, message, role };
-    socket.emit('chatMessage', chatData);
-
-    // Clear the input field
-    messageInput.value = '';
+// Start the server
+server.listen(3000, () => {
+  console.log('Server listening on port 3000');
 });
-
-// Display new messages from server
-socket.on('message', (data) => {
-    displayMessage(data);
-});
-
-// Function to display a message in the chat box
-function displayMessage({ username, message, role }) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message');
-
-    if (role === 'doctor') {
-        messageElement.classList.add('doctor-message');
-        messageElement.textContent = `Dr. ${username}: ${message}`;
-    } else {
-        messageElement.classList.add('user-message');
-        messageElement.textContent = `${username}: ${message}`;
-    }
-
-    chatBox.appendChild(messageElement);
-
-    // Scroll to the bottom of the chat box
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
